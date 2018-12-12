@@ -54,7 +54,10 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "leds_task.h"
+#include "ble_task.h"
+#include "buttons_task.h"
+#include "ws2812b.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -83,11 +86,8 @@ DMA_HandleTypeDef hdma_tim2_ch1;
 
 UART_HandleTypeDef huart1;
 
-DMA_HandleTypeDef hdma_memtomem_dma1_channel1;
-osThreadId ledsTaskHandle;
 osThreadId buttonsTaskHandle;
 osThreadId bleTaskHandle;
-osMutexId cfgMutexHandle;
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -95,15 +95,11 @@ osMutexId cfgMutexHandle;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_DMA_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_RTC_Init(void);
-void LedsTask(void const * argument);
-void ButtonsTask(void const * argument);
-void BleTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -142,7 +138,6 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_DMA_Init();
   MX_I2C1_Init();
   MX_USART1_UART_Init();
   MX_TIM2_Init();
@@ -153,9 +148,6 @@ int main(void)
   /* USER CODE END 2 */
 
   /* Create the mutex(es) */
-  /* definition and creation of cfgMutex */
-  osMutexDef(cfgMutex);
-  cfgMutexHandle = osMutexCreate(osMutex(cfgMutex));
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
@@ -170,9 +162,7 @@ int main(void)
   /* USER CODE END RTOS_TIMERS */
 
   /* Create the thread(s) */
-  /* definition and creation of ledsTask */
-  osThreadDef(ledsTask, LedsTask, osPriorityNormal, 0, 128);
-  ledsTaskHandle = osThreadCreate(osThread(ledsTask), NULL);
+  CreateLedsTask();
 
   /* definition and creation of buttonsTask */
   osThreadDef(buttonsTask, ButtonsTask, osPriorityNormal, 0, 128);
@@ -339,9 +329,9 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 0;
+  htim2.Init.Prescaler = (SystemCoreClock / WS2812B_FREQUENCY) - 1;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 0;
+  htim2.Init.Period = WS2812B_PERIOD - 1;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
   {
@@ -397,9 +387,9 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 0;
+  htim3.Init.Prescaler = (SystemCoreClock / WS2812B_FREQUENCY) - 1;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 0;
+  htim3.Init.Period = WS2812B_PERIOD - 1;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
   {
@@ -468,37 +458,6 @@ static void MX_USART1_UART_Init(void)
 
 }
 
-/** 
-  * Enable DMA controller clock
-  * Configure DMA for memory to memory transfers
-  *   hdma_memtomem_dma1_channel1
-  */
-static void MX_DMA_Init(void) 
-{
-  /* DMA controller clock enable */
-  __HAL_RCC_DMA1_CLK_ENABLE();
-
-  /* Configure DMA request hdma_memtomem_dma1_channel1 on DMA1_Channel1 */
-  hdma_memtomem_dma1_channel1.Instance = DMA1_Channel1;
-  hdma_memtomem_dma1_channel1.Init.Direction = DMA_MEMORY_TO_MEMORY;
-  hdma_memtomem_dma1_channel1.Init.PeriphInc = DMA_PINC_ENABLE;
-  hdma_memtomem_dma1_channel1.Init.MemInc = DMA_MINC_ENABLE;
-  hdma_memtomem_dma1_channel1.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
-  hdma_memtomem_dma1_channel1.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
-  hdma_memtomem_dma1_channel1.Init.Mode = DMA_NORMAL;
-  hdma_memtomem_dma1_channel1.Init.Priority = DMA_PRIORITY_LOW;
-  if (HAL_DMA_Init(&hdma_memtomem_dma1_channel1) != HAL_OK)
-  {
-    Error_Handler( );
-  }
-
-  /* DMA interrupt init */
-  /* DMA1_Channel5_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Channel5_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Channel5_IRQn);
-
-}
-
 /**
   * @brief GPIO Initialization Function
   * @param None
@@ -513,65 +472,6 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOH_CLK_ENABLE();
 
-}
-
-/* USER CODE BEGIN 4 */
-
-/* USER CODE END 4 */
-
-/* USER CODE BEGIN Header_LedsTask */
-/**
-  * @brief  Function implementing the ledsTask thread.
-  * @param  argument: Not used 
-  * @retval None
-  */
-/* USER CODE END Header_LedsTask */
-void LedsTask(void const * argument)
-{
-
-  /* USER CODE BEGIN 5 */
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
-  /* USER CODE END 5 */ 
-}
-
-/* USER CODE BEGIN Header_ButtonsTask */
-/**
-* @brief Function implementing the buttonsTask thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_ButtonsTask */
-void ButtonsTask(void const * argument)
-{
-  /* USER CODE BEGIN ButtonsTask */
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
-  /* USER CODE END ButtonsTask */
-}
-
-/* USER CODE BEGIN Header_BleTask */
-/**
-* @brief Function implementing the bleTask thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_BleTask */
-void BleTask(void const * argument)
-{
-  /* USER CODE BEGIN BleTask */
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
-  /* USER CODE END BleTask */
 }
 
 /**
