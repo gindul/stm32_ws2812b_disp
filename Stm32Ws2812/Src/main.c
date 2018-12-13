@@ -499,7 +499,7 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : touch_hi_wake_Pin */
   GPIO_InitStruct.Pin = touch_hi_wake_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(touch_hi_wake_GPIO_Port, &GPIO_InitStruct);
 
@@ -527,6 +527,15 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* USER CODE BEGIN Callback 1 */
 
   /* USER CODE END Callback 1 */
+}
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+	if(GPIO_Pin == touch_hi_wake_Pin)
+	{
+		//wakeUp task to read touch controller
+		osSignalSet(buttonsTaskHandle, TASK_READ_I2C_SIGNAL);
+	}
 }
 
 /**
