@@ -10,13 +10,11 @@ STM32 with display on WS2812B (demo project)
 CY8CMBR3108 I2C pins are connected to I2C1 of STM32L152RB (SDA -> PB9, SCL -> PB8), also pin ^HI is connected to PB0.
 
 
-Phone <-> Controller message format
--------------------------------------------------------------
-|      | Start | Start | OpCode | Length |  Payload  | CRC8 |
+### Phone <-> Controller message format
+|      | FLAG1 | FLAG2 | OpCode | Length |  Payload  | CRC8 |
+|------|-------|-------|--------|--------|-----------|------|
 | Byte |   0   |   1   |   2    |   3    |     n     |  n+4 |
--------------------------------------------------------------
 |      | 0x55  | 0xAA  |   0    |   0    | len bytes | 0xXX |
--------------------------------------------------------------
 
 Possible op codes:
 	0x00 -- Status, payload: 0 or !=0 if error
