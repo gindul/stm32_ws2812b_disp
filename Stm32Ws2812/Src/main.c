@@ -538,6 +538,26 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	}
 }
 
+uint8_t UART_ReceiveData(UART_HandleTypeDef *huart)
+{
+	return (uint8_t)(huart->Instance->DR & (uint8_t)0x00FF);
+}
+
+/**
+  * @brief This function handles USART1 global interrupt.
+  */
+void USART1_IRQHandler(void)
+{
+	uint32_t tmp_flag = __HAL_UART_GET_FLAG(&huart1, UART_FLAG_RXNE);
+	uint32_t tmp_it_source = __HAL_UART_GET_IT_SOURCE(&huart1, UART_IT_RXNE);
+
+	if((tmp_flag != RESET) && (tmp_it_source != RESET)) //enter interrupt when STM32 receive data.
+	{
+		uint8_t rx = UART_ReceiveData(&huart1); //receive a char
+		BleTaskPutQueueByte(rx);
+	}
+}
+
 /**
   * @brief  This function is executed in case of error occurrence.
   * @retval None

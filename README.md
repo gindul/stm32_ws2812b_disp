@@ -11,15 +11,24 @@ CY8CMBR3108 I2C pins are connected to I2C1 of STM32L152RB (SDA -> PB9, SCL -> PB
 
 
 Phone <-> Controller message format
------------------------------------------------------
-|------| Start | Length | OpCode |  Payload  | CRC8 |
-| Byte | 0x55  |   0    |   0    | len bytes | 0xXX |
------------------------------------------------------
+-------------------------------------------------------------
+|      | Start | Start | OpCode | Length |  Payload  | CRC8 |
+| Byte |   0   |   1   |   2    |   3    |     n     |  n+4 |
+-------------------------------------------------------------
+|      | 0x55  | 0xAA  |   0    |   0    | len bytes | 0xXX |
+-------------------------------------------------------------
 
 Possible op codes:
 	0x00 -- Status, payload: 0 or !=0 if error
-	0x01 -- Write segment, payload: segment(1b), enable(1b), temp_sec(1b), color_r(1b), color_g(1b), color_b(1b)
-	0x02 -- Read segment, payload is same as for write
 
-Write command sould be confirmed with status cmd.
+	0x01 -- Configure segment lenght, payload: segment(1b), leds_count(1b)
+	0x02 -- Start/Stop segment, payload: segment(1b), start_stop(1b)
+	0x03 -- Set segment color, payload: segment(1b), color_r(1b), color_g(1b), color_b(1b)
+	0x04 -- Set segment temp, payload: segment(1b), temp_sec(1b)
+
+	0x13 -- Read segment color, payload: segment(1b), response payload is same as for set segment color
+	0x14 -- Read segment temp, payload: segment(1b), response payload is same as for set segment temp
+	
+
+Any write command sould be confirmed with status cmd.
 CRC is CRC8-CCITT algo, and should be calculated from start field
