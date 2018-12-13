@@ -14,7 +14,8 @@
 //----------------------------------------------------------
 #define LEDS_TIME_MIN_SEC (50)
 #define LEDS_TIME_MAX_SEC (150)
-#define MAX_SEGMENTS (2)
+#define MAX_SEGMENTS 	  (2)
+#define MAX_LEDS_PER_SEGMENT 	  (20)
 
 //----------------------------------------------------------
 void CreateLedsTask(void);

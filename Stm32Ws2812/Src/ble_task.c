@@ -10,6 +10,7 @@
 
 #include "cmsis_os.h"
 #include "ble_task.h"
+#include "leds_task.h"
 
 //----------------------------------------------------------
 #define BT_PROTO_HDR_SIZE (4)
@@ -150,10 +151,11 @@ static void ProcessFrame(void)
 
 	uint8_t op_code = g_frame.data[2];
 	uint8_t payload_len = g_frame.data[3];
+
 	switch(op_code)
 	{
 	case OPCODE_STATUS:
-		UartSendStatus(BT_STATUS_OK); //used for pool/keepalive
+		UartSendStatus(BT_STATUS_OK); //used for pool/KeepAlive
 		break;
 
 	case OPCODE_CFG_SEGMENT:
