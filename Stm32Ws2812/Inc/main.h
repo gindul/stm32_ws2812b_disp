@@ -94,6 +94,9 @@ void Error_Handler(void);
 #define strip_pin_GPIO_Port GPIOA
 #define display_pin_Pin GPIO_PIN_6
 #define display_pin_GPIO_Port GPIOC
+#define touch_hi_wake_Pin GPIO_PIN_0
+#define touch_hi_wake_GPIO_Port GPIOB
+#define touch_hi_wake_EXTI_IRQn EXTI0_IRQn
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

@@ -10,20 +10,17 @@
 
 #include <stdint.h>
 
-#include <stm32l1xx.h>
-#include <stm32l1xx_hal_rcc.h>
-#include <stm32l1xx_hal_gpio.h>
-#include <stm32l1xx_hal_tim.h>
-#include <stm32l1xx_hal_dma.h>
+#define WS2812B_FREQUENCY       	(800000) // it is fixed: WS2812 require 800kHz
+#define WS2812B_TIMER_CLOCK_FREQ	(16000000)   	// can be modified - multiples of 0.8MHz are suggested
+#define WS2812B_PERIOD				(WS2812B_TIMER_CLOCK_FREQ / WS2812B_FREQUENCY)
 
-#define WS2812B_BUFFER_SIZE     60
-#define WS2812B_START_SIZE      2
+#define WS2812_1       				(TIMER_PERIOD * 2 / 3)
+#define WS2812_0       				(TIMER_PERIOD / 3)
 
-#define WS2812B_FREQUENCY       24000000
-#define WS2812B_PERIOD          30
-
-#define WS2812B_PULSE_HIGH      21
-#define WS2812B_PULSE_LOW       9
+#define LED_CFG_LEDS_CNT_STRIP      (750)
+#define LED_CFG_LEDS_CNT_DISPLAY    (5*20)
+#define LED_CFG_BYTES_PER_LED   	(3)
+#define LED_CFG_RAW_BYTES_PER_LED   (LED_CFG_BYTES_PER_LED * 8)
 
 //----------------------------------------------------------
 typedef struct RGB {
